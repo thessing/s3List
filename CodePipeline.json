@@ -1,0 +1,45 @@
+[
+    {
+        "ParameterKey": "PipelineName",
+        "ParameterValue": "bddLambda"
+    },
+    {
+        "ParameterKey": "GitHubOwner",
+        "ParameterValue": "nobody"
+    },
+    {
+        "ParameterKey": "GitHubRepo",
+        "ParameterValue": "norepo"
+    },
+    {
+        "ParameterKey": "GitHubBranch",
+        "ParameterValue": "main"
+    },
+    {
+        "ParameterKey": "GitHubToken",
+        "ParameterValue": "notoken"
+    },
+    {
+        "ParameterKey": "DataBucket",
+        "ParameterValue": "bdd-us-east-2-678319723661" # non-Prod
+        "ParameterValue": "bdd-us-east-2-560597064362" # Prod
+    },
+    {
+        "ParameterKey": "SourceBucket",
+        "ParameterValue": "cf-source-us-east-2-678319723661" # non-Prod
+        "ParameterValue": "cf-source-us-east-2-560597064362" # Prod
+    },
+    {
+        "ParameterKey": "SourceKey",
+        "ParameterValue": "bddLambda.zip"
+    },
+    {
+        "ParameterKey": "PipelineBucket",
+        "ParameterValue": "codepipeline-us-east-2-678319723661" # non-Prod
+        "ParameterValue": "codepipeline-us-east-2-560597064362" # Prod
+    },
+    {
+        "ParameterKey": "YAMLdir",
+        "ParameterValue": "CloudFormation"
+    }
+] 

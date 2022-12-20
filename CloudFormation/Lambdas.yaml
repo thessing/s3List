@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates Lambda and resources to run as
+
+Parameters:
+# ----------- Resource Details ----------- #
+  ResourceName:
+    Description: Name for the Resource
+    AllowedPattern: ^([A-Za-z0-9_-]*)?$
+    Type: String
+  Creator:
+    Description: Creator's Name
+    AllowedPattern: ^([A-Za-z ]*)?$
+    Type: String
+  CommonName:
+    Description: Friendly name to create in DNS (friendlyname) [no space or specical characters] (friendlyname.iopcloud.ohio.gov)
+    AllowedPattern: ^([A-Za-z0-9_-]*)?$
+    Type: String
+
+  Timestamp:
+    Description: Timestamp for current build
+    Type: String
+  SourceBucket:
+    Description: Name of bucket containing zipped lambda
+    Type: String
+  PipelineName:
+    Description: Name of pipeline
+    Type: String
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceName}-Lambda-${AWS::Region}-${AWS::AccountId}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Sub ${AWS::AccountId}
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Sub ${ResourceName}-Lambda-${AWS::Region}-${AWS::AccountId}
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            -
+              Action:
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Effect: Allow
+              Resource: '*'
+      Path: '/'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${ResourceName}-Lambda-${AWS::Region}-${AWS::AccountId}
+        - Key: Creator
+          Value: !Ref Creator
+
+  s3lLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: !Ref SourceBucket
+        S3Key: !Sub ${PipelineName}/artifacts/${Timestamp}/s3list.zip
+      FunctionName: !Sub ${ResourceName}-${AWS::Region}-${AWS::AccountId}
+      Timeout: 300
+      Role: !GetAtt LambdaRole.Arn
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${ResourceName}-${AWS::Region}-${AWS::AccountId}
+        - Key: Creator
+          Value: !Ref Creator
+
+
+Outputs:
+  cvsARN:
+    Value: !GetAtt s3lLambda.Arn
+    Description:  s3list Lambda ARN
+

@@ -1,0 +1,10 @@
+{
+    "Parameters": {
+        "ResourceName": {"Fn::GetParam": ["SourceCode", "basic_params.json", "ResourceName"]},
+        "Creator": {"Fn::GetParam": ["SourceCode", "basic_params.json", "Creator"]},
+        "CommonName": {"Fn::GetParam": ["SourceCode", "basic_params.json", "CommonName"]},
+        "Timestamp": { "Fn::GetParam" : ["Build", "parameters.json", "timestamp"]},
+        "SourceBucket": { "Fn::GetParam" : ["Build", "parameters.json", "sourceBucket"]},
+        "PipelineName": { "Fn::GetParam" : ["Build", "parameters.json", "pipelineName"]}
+    }
+}

@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defined Web ACL for API
+
+Parameters:
+# ----------- Resource Details ----------- #
+  ResourceName:
+    Description: Name for the Resource
+    AllowedPattern: ^([A-Za-z0-9_-]*)?$
+    Type: String
+  Creator:
+    Description: Creator's Name
+    AllowedPattern: ^([A-Za-z ]*)?$
+    Type: String
+  APIlid:
+    Description: Logical ID for the API attached to WAF.
+    Type: String
+  APIStagelid:
+    Description: Logical ID for the Stage of the API attached to WAF.
+    Type: String
+
+Resources:
+#  APIipSet:
+#    Type: AWS::WAFv2::IPSet
+#    Properties: 
+#      Name: !Sub ${ResourceName}-${AWS::Region}-${AWS::AccountId}
+#      Description: Allowed IP CIDRs for API access
+#      IPAddressVersion: IPV4
+#      Addresses: 
+#        - 0.0.0.0/0 # can't be 0.0.0.0/0
+#      Scope: REGIONAL
+#      Tags:
+#        - Key: ResourceName
+#          Value: !Sub ${ResourceName}-${AWS::Region}-${AWS::AccountId}
+#        - Key: Creator
+#          Value: !Ref Creator
+  APIWebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Ref ResourceName
+      DefaultAction:
+        Block: {}
+      Scope: REGIONAL
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub ${ResourceName}-WebACL
+        SampledRequestsEnabled: true 
+      Rules:
+        - Name: !Sub ${ResourceName}-USonlyIP                             # Allows access originating from US only based IPs
+          Priority: 0
+          Statement:      
+            GeoMatchStatement:
+              CountryCodes:
+              - "US"
+          Action:
+            Allow: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${ResourceName}-USonlyIP
+            SampledRequestsEnabled: true
+#        - Name: !Sub ${ResourceName}-AllowedIPs                           # If doing this shouldn't need US only'
+#          Priority: 1
+#          Statement:
+#            IPSetReferenceStatement:
+#              Arn: !GetAtt APIipSet.Arn
+#          Action:
+#            Allow: {}
+#          VisibilityConfig:
+#            CloudWatchMetricsEnabled: true
+#            MetricName: !Sub ${ResourceName}-AllowedIPs
+#            SampledRequestsEnabled: true
+        - Name: !Sub ${ResourceName}-AWSManagedRulesKnownBadInputsRuleSet # Blocks request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities.
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:      
+            ManagedRuleGroupStatement: 
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+              VendorName: AWS
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${ResourceName}-AWSManagedRulesKnownBadInputsRuleSet
+            SampledRequestsEnabled: true
+        - Name: !Sub ${ResourceName}-AWSManagedRulesCommonRuleSet         # Provides protection against exploitation of a wide range of vulnerabilities, including those described in OWASP publications.
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:      
+            ManagedRuleGroupStatement: 
+              Name: AWSManagedRulesCommonRuleSet
+              VendorName: AWS
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${ResourceName}-AWSManagedRulesCommonRuleSet
+            SampledRequestsEnabled: true
+        - Name: !Sub ${ResourceName}-AWSManagedRulesBotControlRuleSet     # Protection against automated bots that can consume excess resources, skew business metrics, cause downtime, or perform malicious activities.
+          Priority: 4
+          OverrideAction:
+            None: {}
+          Statement:      
+            ManagedRuleGroupStatement: 
+              Name: AWSManagedRulesBotControlRuleSet
+              VendorName: AWS
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${ResourceName}-AWSManagedRulesBotControlRuleSet
+            SampledRequestsEnabled: true
+        - Name: !Sub ${ResourceName}-AWSManagedRulesAnonymousIpList       # Blocks requests from services that allow obfuscation of viewer identity. This can include request originating from VPN, proxies, Tor nodes, and hosting providers (including AWS).
+          Priority: 5
+          OverrideAction:
+            None: {}
+          Statement:      
+            ManagedRuleGroupStatement: 
+              Name: AWSManagedRulesAnonymousIpList
+              VendorName: AWS
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${ResourceName}-AWSManagedRulesAnonymousIpList
+            SampledRequestsEnabled: true
+      Tags:
+        - Key: ResourceName
+          Value: !Ref ResourceName
+        - Key: Creator
+          Value: !Ref Creator
+
+  WAFAssoc:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties: 
+      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${APIlid}/stages/${APIStagelid}
+      WebACLArn: !GetAtt APIWebACL.Arn
+
+  WAFLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub aws-waf-logs-${ResourceName}
+      RetentionInDays: 90
+      Tags:
+        - Key: ResourceName
+          Value: !Sub aws-waf-logs-${ResourceName}
+        - Key: Creator
+          Value: !Ref Creator
+
+  WAFLogConfig:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties: 
+      LogDestinationConfigs: 
+        - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-${ResourceName}
+#        - !GetAtt WAFLogGroup.Arn (adds ":*" which doesn't work...)
+      ResourceArn: !GetAtt APIWebACL.Arn
+
+Outputs:
+    oAPIWebACL:
+        Value: !Ref APIWebACL
+        Description: Web ACL for API

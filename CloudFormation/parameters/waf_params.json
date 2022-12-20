@@ -1,0 +1,8 @@
+{
+    "Parameters": {
+        "ResourceName": {"Fn::GetParam": ["SourceCode", "basic_params.json", "ResourceName"]},
+        "Creator": {"Fn::GetParam": ["SourceCode", "basic_params.json", "Creator"]},
+        "APIlid": { "Fn::GetParam" : ["DplyAPI", "APIgatewayOutput.json", "APIlid"]},
+        "APIStagelid": { "Fn::GetParam" : ["DplyAPI", "APIgatewayOutput.json", "APIStagelid"]}
+    }
+}

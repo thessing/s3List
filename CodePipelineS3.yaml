@@ -1,0 +1,318 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Builds the CodePipeline components 
+
+Parameters:
+# ----------- Resource Details ----------- #
+  PipelineName:
+    Description: Name for the Pipeline
+    AllowedPattern: ^([A-Za-z0-9]*)?$
+    Type: String
+# ----------- S3 Source Details ----------- #
+  SourceBucket:
+    Description: S3 for the Source Code
+    AllowedPattern: ^([a-z0-9.-]{3,63})?$
+    Type: String
+    Default: cf-source-us-east-2-560597064362
+  SourceKey:
+    Description: S3 Object Key for Zipped Source code
+    Type: String
+    Default: bddLambda.zip
+    AllowedPattern: "[A-Za-z0-9-.]+"
+# ----------- Pipeline Details ----------- #
+  PipelineBucket:
+    Description: S3 for the CodePipeline Artifacts
+    AllowedPattern: ^([a-z0-9.-]{3,63})?$
+    Type: String
+    Default: codepipeline-us-east-2-560597064362
+# ----------- Deployment Details ----------- #
+  YAMLdir:
+    Description: Sub-Directory for the project YAMLs in Source Repo
+    AllowedPattern: ^([A-Za-z0-9]*)?$
+    Type: String
+    Default: CloudFormation
+
+Resources:
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelineBucket
+      Name: !Sub ${PipelineName}-codepipeline
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                S3Bucket: !Ref SourceBucket
+                S3ObjectKey: !Ref SourceKey
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: SourceCode
+              RunOrder: 1
+
+        - Name: BuildAndPackage
+          Actions:
+            - Name: Application_Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref BuildProject
+              InputArtifacts:
+              - Name: SourceCode
+              OutputArtifacts:
+              - Name: Build
+              RunOrder: 1
+
+        - Name: Deploy
+          Actions:
+            - Name: Cleanup_WAF
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-WAF-CloudFormation-Stack
+              RunOrder: 1
+
+            - Name: Cleanup_APIgateway
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-APIgateway-CloudFormation-Stack
+              RunOrder: 1
+
+            - Name: Cleanup_Lambdas
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-lambdas-CloudFormation-Stack
+              RunOrder: 2
+
+            - Name: Deploy_Lambdas
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-lambdas-CloudFormation-Stack
+                TemplateConfiguration: !Sub SourceCode::${YAMLdir}/parameters/lambda_params.json
+                TemplatePath: !Sub SourceCode::${YAMLdir}/Lambdas.yaml
+                OutputFileName: LambdaOutput.json
+              InputArtifacts:
+                - Name: SourceCode
+                - Name: Build
+              OutputArtifacts:
+                - Name: DplyLambda
+              RunOrder: 3
+
+            - Name: Deploy_APIgateway
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-APIgateway-CloudFormation-Stack
+                TemplateConfiguration: !Sub SourceCode::${YAMLdir}/parameters/apigateway_params.json
+                TemplatePath: !Sub SourceCode::${YAMLdir}/APIgateway.yaml
+                OutputFileName: APIgatewayOutput.json
+              InputArtifacts:
+                - Name: SourceCode
+                - Name: DplyLambda
+              OutputArtifacts:
+                - Name: DplyAPI
+              RunOrder: 4
+
+            - Name: Deploy_WAF
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-WAF-CloudFormation-Stack
+                TemplateConfiguration: !Sub SourceCode::${YAMLdir}/parameters/waf_params.json
+                TemplatePath: !Sub SourceCode::${YAMLdir}/WAF.yaml
+                OutputFileName: WAFOutput.json
+              InputArtifacts:
+                - Name: SourceCode
+                - Name: DplyAPI
+              OutputArtifacts:
+                - Name: DplyWAF
+              RunOrder: 5
+
+        - Name: Decommission_Approval
+          Actions:
+            - Name: DecommissionApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+              InputArtifacts: []
+              RoleArn: !GetAtt CodePipelineRole.Arn
+              RunOrder: 1
+
+        - Name: Decommission
+          Actions:
+            - Name: Cleanup_WAF
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-WAF-CloudFormation-Stack
+              RunOrder: 1
+
+            - Name: Cleanup_APIgateway
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-APIgateway-CloudFormation-Stack
+              RunOrder: 1
+
+            - Name: Cleanup_Lambdas
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: DELETE_ONLY
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub ${PipelineName}-lambdas-CloudFormation-Stack
+              RunOrder: 2
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${PipelineName}-CodePipeline-Role
+
+  CloudformationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${PipelineName}-Cloudformation-Role
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${PipelineName}-CodeBuild-Role
+
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables: 
+            - Name: TEMPLATE_BUCKET
+              Type: PLAINTEXT
+              Value: !Ref PipelineBucket
+            - Name: PIPELINE_NAME
+              Type: PLAINTEXT
+              Value: !Sub ${PipelineName}-codepipeline 
+            - Name: GitHubOwner
+              Type: PLAINTEXT
+              Value: ""
+            - Name: GitHubRepo
+              Type: PLAINTEXT
+              Value: ""
+            - Name: GitHubBranch
+              Type: PLAINTEXT
+              Value: ""
+            - Name: GitHubToken
+              Type: PLAINTEXT
+              Value: ""
+        Image: aws/codebuild/standard:5.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt CodeBuildRole.Arn 
+      Source:
+        Type: CODEPIPELINE
+      Tags:
+        - Key: ResourceName
+          Value: !Sub ${PipelineName}-Build-Project
+
+Outputs:
+  oCodePipeline:
+    Value: !Ref CodePipeline

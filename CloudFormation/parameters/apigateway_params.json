@@ -1,0 +1,8 @@
+{
+    "Parameters": {
+        "ResourceName": {"Fn::GetParam": ["SourceCode", "basic_params.json", "ResourceName"]},
+        "Creator": {"Fn::GetParam": ["SourceCode", "basic_params.json", "Creator"]},
+        "CommonName": {"Fn::GetParam": ["SourceCode", "basic_params.json", "CommonName"]},
+        "LambdaARN": { "Fn::GetParam" : ["DplyLambda", "LambdaOutput.json", "cvsARN"]}
+    }
+}

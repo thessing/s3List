@@ -1,0 +1,18 @@
+Send in body
+{
+	"uid": "39491201"
+}
+ then return in body
+{
+	[
+	 {
+	  'FileName': 'RAL_12_19_Test_A_2022-12-19.csv', 
+	  'FileKey': 'downloads/39491201/1671460964030/RAL_12_19_Test_A_2022-12-19.csv', 
+	  'KBytes': 1954, 
+	  'Bytes': 2001230, 
+	  'Epoch': 1671460964030, 
+      'Start': '2022-12-19 14:42:44', 
+	  'End': '2022-12-20 16:45:39'}
+	 }
+	]
+}

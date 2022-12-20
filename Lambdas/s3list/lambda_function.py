@@ -137,7 +137,7 @@ def lambda_handler(event, context):
         fkey = iobj['Key']
         osze = iobj['Size']
         bsze = int(iobj['Size'] / 1024)
-        #'2022-12-19 14:42:44', 'End': datetime.datetime(2022, 12, 20, 16, 45, 39, tzinfo=tzlocal())}]
+        #
         etme = iobj['LastModified'].strftime('%Y-%m-%d %H:%M:%S') 
         fsplit = fkey.split('/')
         #

@@ -5,7 +5,7 @@
 #
 # Author: Tim Hessing
 # Created: 12-20-2022
-# Updated: 12-20-2022
+# Updated: 12-21-2022
 #
 import json
 import boto3
@@ -132,25 +132,28 @@ def lambda_handler(event, context):
     #
     # Loop over Object
     filelist = []
-    objects = resp['Contents']
-    for iobj in objects:
-        fkey = iobj['Key']
-        osze = iobj['Size']
-        bsze = int(iobj['Size'] / 1024)
-        #
-        etme = iobj['LastModified'].strftime('%Y-%m-%d %H:%M:%S') 
-        fsplit = fkey.split('/')
-        #
-        # If fkey goes beyond downloas/uid/epoch then check for size and keep
-        if len(fsplit) > 3:
+    try:
+        objects = resp['Contents']
+        for iobj in objects:
+            fkey = iobj['Key']
+            osze = iobj['Size']
+            bsze = int(iobj['Size'] / 1024)
+            #'2022-12-19 14:42:44', 'End': datetime.datetime(2022, 12, 20, 16, 45, 39, tzinfo=tzlocal())}]
+            etme = iobj['LastModified'].strftime('%Y-%m-%d %H:%M:%S') 
+            fsplit = fkey.split('/')
             #
-            # Get S3 object info
-            if osze > 0:
-                epoch = int(fsplit[2])
-                ltime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch / 1000))
-                fname = fsplit[3]
-                item = {"FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": ltime, "End": etme}
-                filelist.append(item)
+            # If fkey goes beyond downloas/uid/epoch then check for size and keep
+            if len(fsplit) > 3:
+                #
+                # Get S3 object info
+                if osze > 0:
+                    epoch = int(fsplit[2])
+                    ltime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch / 1000))
+                    fname = fsplit[3]
+                    item = {"FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": ltime, "End": etme}
+                    filelist.append(item)
+    except:
+        print('No Objects Found in Bucket')
     #
     # Create Response
     print("  Files: ", filelist)

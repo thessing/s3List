@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\CloudFormation",
+    "\\CloudFormation\\parameters",
+    "\\Lambdas",
+    "\\Lambdas\\s3list"
+  ],
+  "PreviewInSolutionExplorer": false
+}

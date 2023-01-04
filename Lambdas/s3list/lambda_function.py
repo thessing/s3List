@@ -1,16 +1,17 @@
 #
-# CVS Lambda - lambda_function.py
+# S3 List Lambda - lambda_function.py
 #
 # Description:- When Executed will provide get a list of files stored in S3 and provide that list
 #
 # Author: Tim Hessing
 # Created: 12-20-2022
-# Updated: 12-21-2022
+# Updated: 01-04-2023
 #
 import json
 import boto3
 import boto3.session
-from datetime import datetime 
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import time
 
 #
@@ -132,6 +133,7 @@ def lambda_handler(event, context):
     #
     # Loop over Object
     filelist = []
+    zinfo = ZoneInfo('US/Eastern')
     try:
         objects = resp['Contents']
         for iobj in objects:
@@ -139,7 +141,10 @@ def lambda_handler(event, context):
             osze = iobj['Size']
             bsze = int(iobj['Size'] / 1024)
             #'2022-12-19 14:42:44', 'End': datetime.datetime(2022, 12, 20, 16, 45, 39, tzinfo=tzlocal())}]
-            etme = iobj['LastModified'].strftime('%Y-%m-%d %H:%M:%S') 
+            etme = iobj['LastModified'].strftime('%Y-%m-%d %H:%M:%S %Z%z') 
+            etim = time.strptime(etme, '%Y-%m-%d %H:%M:%S %Z%z')
+            edts  = datetime.fromtimestamp(time.mktime(etim))
+            eztm  = edts.astimezone(zinfo).strftime('%Y-%m-%d %H:%M:%S %Z%z') 
             fsplit = fkey.split('/')
             #
             # If fkey goes beyond downloas/uid/epoch then check for size and keep
@@ -147,11 +152,18 @@ def lambda_handler(event, context):
                 #
                 # Get S3 object info
                 if osze > 0:
-                    epoch = int(fsplit[2])
-                    ltime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch / 1000))
-                    fname = fsplit[3]
-                    item = {"FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": ltime, "End": etme}
-                    filelist.append(item)
+                    fname  = fsplit[3]
+                    if fname[0:5].lower() == 'part-':
+                        print('Temporary File: ', fname)
+                    else:
+                        print('Final File: ', fname)
+                        epoch = int(fsplit[2])
+                        stim = time.localtime(epoch / 1000)
+                        sdts = datetime.fromtimestamp(time.mktime(stim))
+                        sztm = sdts.astimezone(zinfo).strftime('%Y-%m-%d %H:%M:%S %Z%z')                
+
+                        item = {"FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": sztm, "End": eztm}
+                        filelist.append(item)
     except:
         print('No Objects Found in Bucket')
     #

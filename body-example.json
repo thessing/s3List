@@ -16,3 +16,106 @@ Send in body
 	 }
 	]
 }
+
+{
+  "resource": "/bdd-dev",
+  "path": "/bdd-dev",
+  "httpMethod": "POST",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
+    "content-type": "application/json",
+    "Host": "p5w2fd0ohe.execute-api.us-east-2.amazonaws.com",
+    "origin": "http://localhost:8765",
+    "referer": "http://localhost:8765/Samples/BulkDownload/bulkdownload.html",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "cross-site",
+    "User-Agent": "Tableau Desktop 20214.22.0812.0355; pro; libcurl-client; 64-bit; en_US; Microsoft Windows 10 Pro (Build 19042); Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.15.0 Chrome/80.0.3987.163 Safari/537.36",
+    "X-Amzn-Trace-Id": "Root=1-633385f1-58d01ad60838d36116efa562",
+    "X-Forwarded-For": "199.18.135.33",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "accept": [
+      "*/*"
+    ],
+    "accept-encoding": [
+      "gzip, deflate, br"
+    ],
+    "content-type": [
+      "application/json"
+    ],
+    "Host": [
+      "p5w2fd0ohe.execute-api.us-east-2.amazonaws.com"
+    ],
+    "origin": [
+      "http://localhost:8765"
+    ],
+    "referer": [
+      "http://localhost:8765/Samples/BulkDownload/bulkdownload.html"
+    ],
+    "sec-fetch-dest": [
+      "empty"
+    ],
+    "sec-fetch-mode": [
+      "cors"
+    ],
+    "sec-fetch-site": [
+      "cross-site"
+    ],
+    "User-Agent": [
+      "Tableau Desktop 20214.22.0812.0355; pro; libcurl-client; 64-bit; en_US; Microsoft Windows 10 Pro (Build 19042); Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.15.0 Chrome/80.0.3987.163 Safari/537.36"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-633385f1-58d01ad60838d36116efa562"
+    ],
+    "X-Forwarded-For": [
+      "199.18.135.33"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "1icnx3",
+    "resourcePath": "/bdd-dev",
+    "operationName": "datadownload",
+    "httpMethod": "POST",
+    "extendedRequestId": "ZJHdxHsqiYcF7zw=",
+    "requestTime": "27/Sep/2022:23:23:29 +0000",
+    "path": "/v0/bdd-dev",
+    "accountId": "678319723661",
+    "protocol": "HTTP/1.1",
+    "stage": "v0",
+    "domainPrefix": "p5w2fd0ohe",
+    "requestTimeEpoch": 1664321009594,
+    "requestId": "db384a45-9e21-4da2-8f32-50c41041c472",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "199.18.135.33",
+      "principalOrgId": null,
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": null,
+      "userAgent": "Tableau Desktop 20214.22.0812.0355; pro; libcurl-client; 64-bit; en_US; Microsoft Windows 10 Pro (Build 19042); Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.15.0 Chrome/80.0.3987.163 Safari/537.36",
+      "user": null
+    },
+    "domainName": "p5w2fd0ohe.execute-api.us-east-2.amazonaws.com",
+    "apiId": "p5w2fd0ohe"
+  },
+  "body": "{\"uid\":\"39491201\"}",
+  "isBase64Encoded": false
+}

@@ -5,7 +5,7 @@
 #
 # Author: Tim Hessing
 # Created: 12-20-2022
-# Updated: 01-04-2023
+# Updated: 01-08-2023
 #
 import json
 import boto3
@@ -13,6 +13,7 @@ import boto3.session
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import time
+from operator import itemgetter
 
 #
 # Create DynamoDB & S3 Client
@@ -169,6 +170,8 @@ def lambda_handler(event, context):
     #
     # Create Response
     print("  Files: ", filelist)
+    sfilelist = sorted(filelist, key=itemgetter('Start'), reverse=False)
+    print("Sorted: ", sfilelist)
     #
     response = {
         'statusCode': 200,
@@ -178,6 +181,6 @@ def lambda_handler(event, context):
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'OPTIONS,POST'
             },
-        'body': json.dumps(filelist)
+        'body': json.dumps(sfilelist)
     }
     return response

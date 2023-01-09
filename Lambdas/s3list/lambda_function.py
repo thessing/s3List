@@ -5,7 +5,7 @@
 #
 # Author: Tim Hessing
 # Created: 12-20-2022
-# Updated: 01-08-2023
+# Updated: 01-09-2023
 #
 import json
 import boto3
@@ -170,7 +170,7 @@ def lambda_handler(event, context):
     #
     # Create Response
     print("  Files: ", filelist)
-    sfilelist = sorted(filelist, key=itemgetter('Start'), reverse=False)
+    sfilelist = sorted(filelist, key=itemgetter('Start'), reverse=True)
     print("Sorted: ", sfilelist)
     #
     response = {

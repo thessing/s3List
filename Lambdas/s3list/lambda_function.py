@@ -5,7 +5,7 @@
 #
 # Author: Tim Hessing
 # Created: 12-20-2022
-# Updated: 01-09-2023
+# Updated: 05-03-2023
 #
 import json
 import boto3
@@ -21,6 +21,7 @@ from operator import itemgetter
 dynamo_cli = boto3.client('dynamodb')
 session    = boto3.session.Session(region_name='us-east-2')
 s3_cli     = boto3.client('s3')
+bdd_status = ['Processing', 'Error', 'Failed', 'Empty']
 
 def lambda_handler(event, context):
     #
@@ -131,6 +132,7 @@ def lambda_handler(event, context):
     #
     # Get list of objects for this User ID
     resp = s3_cli.list_objects(Bucket=bucket,Prefix=prefix)
+    print(resp)
     #
     # Loop over Object
     filelist = []
@@ -153,17 +155,26 @@ def lambda_handler(event, context):
                 #
                 # Get S3 object info
                 if osze > 0:
-                    fname  = fsplit[3]
-                    if fname[0:5].lower() == 'part-':
+                    fname0 = fsplit[3]
+                    fname  = fname0
+                    if fname[0:5].lower() == 'part-' or fname[0:5].lower() == '_temp' or fname.lower() == '_success':
                         print('Temporary File: ', fname)
                     else:
+                        fsplit1 = fname0.split('_')
+                        file_status = 'Success'
+                        for fstat in bdd_status:
+                            if fsplit1[0].lower() == fstat.lower():
+                                file_status = fsplit1[0].capitalize()
+                                fstart = len(file_status) + 1
+                                fname = fname0[fstart:]
+                        print('Status: ', file_status)
                         print('Final File: ', fname)
                         epoch = int(fsplit[2])
                         stim = time.localtime(epoch / 1000)
                         sdts = datetime.fromtimestamp(time.mktime(stim))
                         sztm = sdts.astimezone(zinfo).strftime('%Y-%m-%d %H:%M:%S %Z%z')                
 
-                        item = {"FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": sztm, "End": eztm}
+                        item = {"Status": file_status, "FileName": fname, "FileKey": fkey, "KBytes": bsze, "Bytes": osze, "Epoch": epoch, "Start": sztm, "End": eztm}
                         filelist.append(item)
     except:
         print('No Objects Found in Bucket')
